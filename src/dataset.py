@@ -1,7 +1,19 @@
 import pandas as pd
-from sklearn.model_selection import train_test_split
 
-def returnDataset(path, leakage_columns=None):
+def returnDataset(path: str, leakage_cols=None, metadata_cols=None):
+      """ Returns a dataset.
+
+      Args:
+            path (str): import path of the dataset.
+            leakage_cols (arr): array with leakage features from the dataset.
+            metadata_cols (arr): array with unnecessary columns from the dataset.
+
+      Returns:
+            Pandas DataFrame.
+      
+      """
       df = pd.read_csv(path)
-      df = df.drop(leakage_columns, axis=1)
+      leakage_cols = leakage_cols or []
+      metadata_cols = metadata_cols or []
+      df = df.drop([*leakage_cols, *metadata_cols], axis=1)
       return df

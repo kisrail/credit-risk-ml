@@ -1,6 +1,7 @@
 from src.dataset import returnDataset
 from src.train import get_model_pipelines, evaluate_model
 from sklearn.model_selection import train_test_split
+from src.test_submission import generateSubmission
 
 SEED = 42
 
@@ -16,26 +17,30 @@ LEAKAGE_COLS = [
       'score_recent'
 ]
 
-train_df = returnDataset('data/raw/d2assignment_dataset.csv', LEAKAGE_COLS)
+METADATA_COLS = [
+      'row_id'
+]
+
+train_df = returnDataset('data/raw/d2assignment_dataset.csv', LEAKAGE_COLS, METADATA_COLS)
+test_df = returnDataset('data/raw/d2assignment_test.csv', LEAKAGE_COLS)
 
 X = train_df.drop('target', axis=1)
 y = train_df['target']
 
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=.2, random_state=SEED)
 
-# Feature Engineering & Data Pre-Processing
-placeholder_cols = [
+PLACEHOLDER_COLS = [
       'm_since_delinq',
       'm_since_inquiry',
       'm_since_card_open'
 ]
 
-other_placeholder_cols = [
+OTHER_PLD_COLS = [
       'pct_cards_hi_util',
       'card_headroom'
 ]
 
-median_cols = [
+MEDIAN_COLS = [
       'emp_years',
       'card_util',
       'revolving_util',
@@ -58,7 +63,25 @@ SELECTED_FEATURES = [
 
 scale_pos_weight = (len(y_train) - sum(y_train)) / sum(y_train)
 
-pipelines = get_model_pipelines(placeholder_cols, other_placeholder_cols, median_cols, scale_pos_weight=scale_pos_weight, seed=SEED)
+pipelines = get_model_pipelines(
+      PLACEHOLDER_COLS,
+      OTHER_PLD_COLS,
+      MEDIAN_COLS,
+      SELECTED_FEATURES,
+      scale_pos_weight=scale_pos_weight,
+      seed=SEED
+)
 results = evaluate_model(pipelines, X_train, y_train, cv_splits=5, seed=SEED)
 
-print(results.items())
+print(results)
+
+generateSubmission(
+      results_df=results,
+      metric_col = 'Mean ROC-AUC',
+      models_pipeline=pipelines,
+      X_train=X,
+      y_train=y,
+      test_dataset=test_df,
+      path='./submission.csv',
+      row_id_col='row_id'
+)
