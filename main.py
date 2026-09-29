@@ -2,6 +2,7 @@ from src.dataset import returnDataset
 from src.train import get_model_pipelines, evaluate_model
 from sklearn.model_selection import train_test_split
 from src.test_submission import generateSubmission
+import time
 
 SEED = 42
 
@@ -18,11 +19,14 @@ LEAKAGE_COLS = [
 ]
 
 METADATA_COLS = [
-      'row_id'
+      'row_id',
+      'app_kind'
 ]
 
-train_df = returnDataset('data/raw/d2assignment_dataset.csv', LEAKAGE_COLS, METADATA_COLS)
-test_df = returnDataset('data/raw/d2assignment_test.csv', LEAKAGE_COLS)
+start_time = time.perf_counter()
+
+train_df = returnDataset('data/d2assignment_dataset.csv', LEAKAGE_COLS, METADATA_COLS)
+test_df = returnDataset('data/d2assignment_test.csv', LEAKAGE_COLS)
 
 X = train_df.drop('target', axis=1)
 y = train_df['target']
@@ -48,17 +52,34 @@ MEDIAN_COLS = [
 ]
 
 SELECTED_FEATURES = [
+      # Features with Strong Positive Correlation with the Target
       'risk_band',
       'bureau_score',
       'card_limit_total',
-      'avg_balance_per_tradeline',
-      'inquiry_acceleration',
-      'delinq_per_tradeline',
-      'monthly_payment_on_income',
-      'total_derogatory_events',
       'emp_years',
       'income_annual',
-      'debt_ratio'
+      'debt_ratio',
+
+      # Features with Strong Negative Correlation with the Target
+
+      # Engineered Features
+      'avg_balance_per_tradeline',
+      'monthly_payment_on_income',
+      'free_cash_flow',
+      'loan_income_ratio',
+
+      'util_gap',
+      'headroom_to_income',
+      'limit_saturation',
+      'non_mortgage_loans',
+
+      'inquiry_intensity',
+      'inquiry_acceleration',
+      'acct_velocity_ratio',
+
+      'delinq_per_tradeline',
+      'total_derogatory_events',
+      'dirty_tradelines'
 ]
 
 scale_pos_weight = (len(y_train) - sum(y_train)) / sum(y_train)
@@ -74,6 +95,9 @@ pipelines = get_model_pipelines(
 results = evaluate_model(pipelines, X_train, y_train, cv_splits=5, seed=SEED)
 
 print(results)
+
+elapsed_time = time.perf_counter() - start_time
+print(f"Execution time: {elapsed_time:.6f} seconds")
 
 generateSubmission(
       results_df=results,

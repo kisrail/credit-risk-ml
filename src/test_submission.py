@@ -1,4 +1,5 @@
 import pandas as pd
+import numpy as np
 
 def generateSubmission(
             results_df,
@@ -35,7 +36,7 @@ def generateSubmission(
 
       submission_df = pd.DataFrame({
             'row_id': row_ids,
-            'predicted_probability': test_probs
+            'predicted_probability': np.round(test_probs, 4)
       })
 
       submission_df.to_csv(path, index=False)
