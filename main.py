@@ -52,15 +52,26 @@ MEDIAN_COLS = [
 ]
 
 SELECTED_FEATURES = [
-      # Features with Strong Positive Correlation with the Target
+      # Positive Correlated Featuers
+      'pricing_rate',
       'risk_band',
-      'bureau_score',
-      'card_limit_total',
-      'emp_years',
-      'income_annual',
+      'new_accts_24m',
+      'new_accts_12m',
       'debt_ratio',
+      'inquiries_6m',
+      'pct_cards_hi_util',
+      'card_util',
 
-      # Features with Strong Negative Correlation with the Target
+      # Negative Correlated Features
+      'newest_account_m',
+      'mortgage_ct',
+      'housing_status',
+      'total_balance',
+      'avg_balance',
+      'card_headroom',
+      'card_limit_total',
+      'total_credit_limit',
+      'bureau_score',
 
       # Engineered Features
       'avg_balance_per_tradeline',
@@ -82,6 +93,11 @@ SELECTED_FEATURES = [
       'dirty_tradelines'
 ]
 
+DROP_COLS = [
+      'region_code',
+      'area_code'
+]
+
 scale_pos_weight = (len(y_train) - sum(y_train)) / sum(y_train)
 
 pipelines = get_model_pipelines(
@@ -89,15 +105,13 @@ pipelines = get_model_pipelines(
       OTHER_PLD_COLS,
       MEDIAN_COLS,
       SELECTED_FEATURES,
+      DROP_COLS,
       scale_pos_weight=scale_pos_weight,
       seed=SEED
 )
 results = evaluate_model(pipelines, X_train, y_train, cv_splits=5, seed=SEED)
 
 print(results)
-
-elapsed_time = time.perf_counter() - start_time
-print(f"Execution time: {elapsed_time:.6f} seconds")
 
 generateSubmission(
       results_df=results,
@@ -109,3 +123,6 @@ generateSubmission(
       path='./submission.csv',
       row_id_col='row_id'
 )
+
+elapsed_time = time.perf_counter() - start_time
+print(f"Execution time: {elapsed_time:.6f} seconds")

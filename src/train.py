@@ -1,11 +1,13 @@
 import numpy as np
 import pandas as pd
-from src.feature_engineering import feature_engineering, pipeline_imputers, feature_selector
+from src.feature_engineering import feature_engineering
+from src.preprocessing import pipeline_imputers, feature_selector, drop_features
 from sklearn.model_selection import StratifiedKFold, cross_val_score
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import FunctionTransformer, StandardScaler
 from sklearn.impute import SimpleImputer
 from sklearn.linear_model import LogisticRegression
+from sklearn.decomposition import PCA
 from sklearn.ensemble import RandomForestClassifier
 from xgboost import XGBClassifier
 
@@ -14,6 +16,7 @@ def get_model_pipelines(
       other_placeholder_cols: list,
       median_cols: list,
       feature_cols: list,
+      drop_cols: list,
       scale_pos_weight: float = 1.0,
       seed: int = 42            
 ) -> dict:
@@ -22,9 +25,13 @@ def get_model_pipelines(
                   ('feature_engineering', FunctionTransformer(feature_engineering, validate=False)),
                   ('base_imputer', pipeline_imputers(placeholder_cols, other_placeholder_cols, median_cols)),
                   ('remaining_imputers', SimpleImputer(strategy='median').set_output(transform='pandas')),
+                  ('drop_cols', drop_features(drop_cols)),
                   ('scaler', StandardScaler()),
                   ('model', LogisticRegression(
-                        max_iter=200,
+                        l1_ratio=0,
+                        C=0.8,
+                        max_iter=600,
+                        solver='lbfgs',
                         class_weight='balanced',
                         random_state=seed
                   ))
@@ -36,7 +43,7 @@ def get_model_pipelines(
                   ('feature_selection', feature_selector(feature_cols)),
                   ('scaler', StandardScaler()),
                   ('model', LogisticRegression(
-                        max_iter=200,
+                        max_iter=400,
                         class_weight='balanced',
                         random_state=seed
                   ))
@@ -44,7 +51,8 @@ def get_model_pipelines(
             'Random Forest': Pipeline([
                   ('feature_engineering', FunctionTransformer(feature_engineering, validate=False)),
                   ('base_imputer', pipeline_imputers(placeholder_cols, other_placeholder_cols, median_cols)),
-                  ('remaining_imputers', SimpleImputer(strategy='median').set_output(transform='pandas')),
+                  #('remaining_imputers', SimpleImputer(strategy='median').set_output(transform='pandas')),
+                  ('drop_cols', drop_features(drop_cols)),
                   ('model', RandomForestClassifier(
                         n_estimators=200,
                         max_depth=6,
@@ -56,13 +64,15 @@ def get_model_pipelines(
             'XGBoost': Pipeline([
                   ('feature_engineering', FunctionTransformer(feature_engineering, validate=False)),
                   ('base_imputer', pipeline_imputers(placeholder_cols, other_placeholder_cols, median_cols)),
-                  ('remaining_imputers', SimpleImputer(strategy='median').set_output(transform='pandas')),
+                  #('remaining_imputers', SimpleImputer(strategy='median').set_output(transform='pandas')),
+                  ('drop_cols', drop_features(drop_cols)),
                   ('model', XGBClassifier(
                         n_estimators=500,
-                        max_depth=5,
+                        max_depth=6,
                         learning_rate=0.01,
                         subsample=0.8,
                         colsample_bytree=0.8,
+                        min_child_weight=8,
                         eval_metric='auc',
                         tree_method='hist',
                         scale_pos_weight=scale_pos_weight,

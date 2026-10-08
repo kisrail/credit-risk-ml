@@ -1,22 +1,3 @@
-from sklearn.compose import ColumnTransformer
-from sklearn.impute import SimpleImputer
-
-def pipeline_imputers(placeholder_cols, other_placeholder_cols, median_cols):
-      base_imputer = ColumnTransformer([
-            ('negative_placeholder', SimpleImputer(strategy='constant', fill_value=-1, add_indicator=True), placeholder_cols),
-            ('zero_placeholder', SimpleImputer(strategy='constant', fill_value=0, add_indicator=True), other_placeholder_cols),
-            ('median_placeholder', SimpleImputer(strategy='median'), median_cols)
-      ], remainder='passthrough', verbose_feature_names_out=False).set_output(transform='pandas')
-
-      return base_imputer
-
-def feature_selector(features):
-      selected_features = ColumnTransformer([
-            ('feature_selection', 'passthrough', features)
-      ], remainder='drop', verbose_feature_names_out=False).set_output(transform='pandas')
-
-      return selected_features
-
 def feature_engineering(df):
       """ Returns the dataset with additional engineered features.
 
@@ -29,13 +10,13 @@ def feature_engineering(df):
       """
       df_out = df.copy()
 
-      # (1) Payment Affordability:
+      # (1) Payment Affordability
       df_out['avg_balance_per_tradeline'] = df_out['avg_balance'] / (df_out['open_tradelines'] + 1e-5)
       df_out['monthly_payment_on_income'] = (df_out['monthly_payment'] * 12) / (df_out['income_annual'] + 1e-5) # Monthly installment burden relative to annual income.
       df_out['free_cash_flow'] = (df_out['income_annual'] / 12) * (1 - df_out['debt_ratio']) - df_out['monthly_payment'] # Monthly surplus remaining after satisfying debt obligations and loan installments.
       df_out['loan_income_ratio'] = df_out['principal_req'] / df_out['income_annual']
 
-      # (2) Utilization:
+      # (2) Utilization
       df_out['util_gap'] = df_out['card_util'] - df_out['revolving_util']
       df_out['headroom_to_income'] = df_out['card_headroom'] / df_out['income_annual'] # Available liquidity against annual income.
       df_out['limit_saturation'] = df_out['total_balance'] / df_out['total_credit_limit'] # Exposure ratio across all active accounts.
